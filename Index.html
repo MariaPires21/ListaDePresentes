@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Desejos de Natal - Família</title>
+    <link rel="stylesheet" href="Estilo.css">
+</head>
+
+<body>
+    <header style="background: url('imgNatal.jpg') no-repeat center center; background-size: cover;">
+        <div class="container">
+            <h1>Lista de Desejos de Natal</h1>
+            <p class="subtitle">Compartilhe o que você gostaria de ganhar neste Natal!</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="nav-tabs">
+            <button class="tab-btn active" data-tab="form">Adicionar Meus Desejos</button>
+            <button class="tab-btn" data-tab="view">Ver Lista de Desejos</button>
+        </div>
+
+        <div class="instructions card">
+            <h3>Como funciona:</h3>
+            <ol>
+                <li>Na aba "Adicionar Meus Desejos", preencha seu nome e o que você gostaria de ganhar</li>
+                <li>Você pode adicionar uma imagem do presente que deseja (opcional)</li>
+                <li>Depois de enviar, compartilhe o site com sua família</li>
+                <li>Na aba "Ver Lista de Desejos", todos podem ver o que cada pessoa deseja</li>
+            </ol>
+        </div>
+
+        <section id="form" class="form-section active card">
+            <h2>Adicione seus desejos de Natal</h2>
+            <form id="wishForm">
+                <div class="form-group">
+                    <label for="name">Seu nome:</label>
+                    <input type="text" id="name" required placeholder="Ex: Maria, João, etc.">
+                </div>
+
+                <div class="form-group">
+                    <label for="wish">O que você gostaria de ganhar?</label>
+                    <textarea id="wish" required placeholder="Descreva o que você gostaria de ganhar..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="image">Imagem do presente (opcional):</label>
+                    <input type="file" id="image" accept="image/*">
+                </div>
+
+                <button type="submit" class="btn">Enviar Meus Desejos</button>
+            </form>
+        </section>
+
+        <section id="view" class="view-section card">
+            <h2>Lista de Desejos da Família</h2>
+            <div class="wish-list" id="wishList">
+                <!-- Os desejos serão inseridos aqui dinamicamente -->
+                <div class="empty-state">
+                    <div>📝</div>
+                    <h3>Nenhum desejo adicionado ainda</h3>
+                    <p>Seja o primeiro a compartilhar seus desejos de Natal!</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Feito com ❤️ para nossa família | Feliz Natal!</p>
+        </div>
+    </footer>
+
+    <script src="Script.js"></script>
+</body>
+
+</html>
