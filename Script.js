@@ -1,6 +1,6 @@
 // Configuração do JSONBin.io
-const JSONBIN_ID = '690fb6ccae596e708f4d14d8'; // Você vai conseguir isso no passo 3
-const MASTER_KEY = '$2a$10$Tmtgh0S3ERmxdctqZ3dtxOhLISS.q6g6v6gBhisR4BFJxG0oOsuB6'; // Você vai conseguir isso no passo 3
+const JSONBIN_ID = '690fb6ccae596e708f4d14d8'; 
+const MASTER_KEY = '$2a$10$Tmtgh0S3ERmxdctqZ3dtxOhLISS.q6g6v6gBhisR4BFJxG0oOsuB6';
 
 // Elementos da interface
 const tabBtns = document.querySelectorAll('.tab-btn');
