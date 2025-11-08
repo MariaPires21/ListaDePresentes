@@ -9,6 +9,17 @@ const viewSection = document.getElementById('view');
 const wishForm = document.getElementById('wishForm');
 const wishList = document.getElementById('wishList');
 
+// Nome do usuário atual (vamos pedir uma vez)
+let currentUserName = '';
+
+// Pedir nome ao carregar a página
+function askUserName() {
+    if (!currentUserName) {
+        currentUserName = prompt('🎄 Qual é o seu nome? (Para gerenciar seus desejos)') || '';
+    }
+    return currentUserName;
+}
+
 // Alternar entre abas
 tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -107,10 +118,21 @@ async function loadWishes() {
                 `;
             }
 
+            // VERIFICAR SE É O DESEJO DO USUÁRIO ATUAL
+            const isCurrentUserWish = currentUserName && 
+                                    wish.name.toLowerCase() === currentUserName.toLowerCase();
+            
+            const deleteButton = isCurrentUserWish ? 
+                `<button class="delete-btn" onclick="deleteWish('${wish.name}')" title="Apagar meu desejo">🗑️</button>` : 
+                '';
+
             wishCard.innerHTML = `
                 ${imageHtml}
                 <div class="wish-info">
-                    <div class="wish-name">${wish.name}</div>
+                    <div class="wish-header">
+                        <div class="wish-name">${wish.name}</div>
+                        ${deleteButton}
+                    </div>
                     <div class="wish-description">${wish.wish}</div>
                     ${wish.images && wish.images.length > 1 ? `
                         <small class="photos-hint">
@@ -135,6 +157,64 @@ async function loadWishes() {
     }
 }
 
+// FUNÇÃO PARA APAGAR DESEJO (APENAS O PRÓPRIO)
+async function deleteWish(name) {
+    // Verificar novamente se é o desejo do usuário atual
+    if (name.toLowerCase() !== currentUserName.toLowerCase()) {
+        alert('❌ Você só pode apagar seu próprio desejo!');
+        return;
+    }
+
+    if (!confirm(`Tem certeza que deseja apagar SEU desejo, ${name}?`)) {
+        return;
+    }
+
+    try {
+        // Carregar desejos existentes
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
+            headers: {
+                'X-Master-Key': MASTER_KEY
+            }
+        });
+        
+        const data = await response.json();
+        let wishes = data.record?.wishes || [];
+
+        // Encontrar e remover o desejo
+        const wishIndex = wishes.findIndex(item => 
+            item.name.toLowerCase() === name.toLowerCase() && 
+            name.toLowerCase() === currentUserName.toLowerCase()
+        );
+        
+        if (wishIndex !== -1) {
+            wishes.splice(wishIndex, 1);
+            
+            // Salvar no JSONBin
+            const updateResponse = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': MASTER_KEY
+                },
+                body: JSON.stringify({ wishes: wishes })
+            });
+
+            if (updateResponse.ok) {
+                alert(`✅ Seu desejo foi apagado com sucesso!`);
+                loadWishes(); // Recarregar a lista
+            } else {
+                throw new Error('Erro ao salvar no JSONBin');
+            }
+        } else {
+            alert('❌ Desejo não encontrado ou você não tem permissão para apagá-lo!');
+        }
+
+    } catch (error) {
+        console.error('Erro ao apagar desejo:', error);
+        alert('❌ Erro ao apagar desejo. Tente novamente.');
+    }
+}
+
 // Função para centralizar imagens verticais
 function handleImageLoad(imgElement) {
     const wrapper = imgElement.parentElement;
@@ -147,7 +227,7 @@ function handleImageLoad(imgElement) {
     }
 }
 
-// Navegação entre imagens - CORRIGIDA
+// Navegação entre imagens
 function navigateImages(wishIndex, direction) {
     const wishCard = document.querySelector(`[data-wish-index="${wishIndex}"]`);
     const container = wishCard.querySelector('.wish-images-container');
@@ -171,7 +251,7 @@ function navigateImages(wishIndex, direction) {
     }
 }
 
-// Processar envio do formulário - CORRIGIDO
+// Processar envio do formulário
 wishForm.addEventListener('submit', async function (e) {
     e.preventDefault();
 
@@ -179,24 +259,23 @@ wishForm.addEventListener('submit', async function (e) {
     const wish = document.getElementById('wish').value.trim();
     const imageFiles = document.getElementById('image').files;
 
-    console.log('Arquivos selecionados:', imageFiles.length);
-
     // Validação básica
     if (!name || !wish) {
         alert('Por favor, preencha seu nome e seu desejo!');
         return;
     }
 
+    // Se não tem nome salvo, usar o nome do formulário
+    if (!currentUserName) {
+        currentUserName = name;
+    }
+
     try {
         let imagesBase64 = [];
         
         if (imageFiles.length > 0) {
-            console.log('Processando', imageFiles.length, 'imagem(ns)...');
-            
             // Processar múltiplas imagens
             for (let i = 0; i < imageFiles.length; i++) {
-                console.log('Processando imagem', i + 1);
-                
                 if (imageFiles[i].size > 2 * 1024 * 1024) {
                     alert(`A imagem ${i + 1} é muito grande! Por favor, escolha imagens menores que 2MB.`);
                     return;
@@ -204,7 +283,6 @@ wishForm.addEventListener('submit', async function (e) {
 
                 const compressedImage = await fileToBase64(imageFiles[i]);
                 imagesBase64.push(compressedImage);
-                console.log('Imagem', i + 1, 'processada com sucesso');
                 
                 // Limitar a 5 imagens no máximo
                 if (imagesBase64.length >= 5) {
@@ -241,10 +319,9 @@ wishForm.addEventListener('submit', async function (e) {
             date: new Date().toISOString()
         };
 
-        // Adicionar imagens (sempre usar o array 'images' para múltiplas)
+        // Adicionar imagens
         if (imagesBase64.length > 0) {
             newWish.images = imagesBase64;
-            console.log('Desejo salvo com', imagesBase64.length, 'imagem(ns)');
         }
 
         wishes.push(newWish);
@@ -305,23 +382,19 @@ function fileToBase64(file) {
             };
             
             img.onerror = function() {
-                console.log('⚠️ Usando imagem original');
                 resolve(e.target.result);
             };
             
             img.src = e.target.result;
         };
         
-        reader.onerror = error => {
-            console.error('Erro ao ler arquivo:', error);
-            reject(error);
-        };
-        
+        reader.onerror = error => reject(error);
         reader.readAsDataURL(file);
     });
 }
 
 // Carregar desejos ao abrir a página
 document.addEventListener('DOMContentLoaded', function() {
+    askUserName();
     loadWishes();
 });
