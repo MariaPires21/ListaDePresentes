@@ -24,7 +24,7 @@ tabBtns.forEach(btn => {
     });
 });
 
-// Função para carregar desejos - CORRIGIDA
+// Função para carregar desejos - CORRIGIDA COM BOTÃO APAGAR
 function loadWishes() {
     const wishes = JSON.parse(localStorage.getItem('familyWishes')) || [];
 
@@ -40,17 +40,17 @@ function loadWishes() {
     }
 
     wishList.innerHTML = '';
-    
+
     wishes.forEach((wish, wishIndex) => {
         const wishCard = document.createElement('div');
         wishCard.className = 'wish-card';
         wishCard.setAttribute('data-wish-index', wishIndex);
 
         let imageHtml = '';
-        
+
         // VERIFICAR SE TEM IMAGENS
         const images = wish.images || (wish.image ? [wish.image] : []);
-        
+
         if (images.length > 0) {
             // MÚLTIPLAS IMAGENS - CARROSSEL
             imageHtml = `
@@ -89,14 +89,21 @@ function loadWishes() {
             `;
         }
 
+        // BOTÃO APAGAR (sempre visível para simplificar)
+        const deleteButton = `<button class="delete-btn" onclick="deleteWish('${wish.name}')" title="Apagar desejo">🗑️</button>`;
+
         wishCard.innerHTML = `
             ${imageHtml}
             <div class="wish-info">
-                <div class="wish-name">${wish.name}</div>
+                <div class="wish-header">
+                    <div class="wish-name">${wish.name}</div>
+                    ${deleteButton}
+                </div>
                 <div class="wish-description">${wish.wish}</div>
                 ${images.length > 1 ? `
                     <small class="photos-hint">📸 ${images.length} foto(s) - Use as setas para navegar</small>
                 ` : ''}
+                <small class="wish-date">Adicionado em: ${new Date(wish.date).toLocaleDateString('pt-BR')}</small>
             </div>
         `;
 
@@ -104,17 +111,36 @@ function loadWishes() {
     });
 }
 
+// FUNÇÃO PARA APAGAR DESEJO
+function deleteWish(name) {
+    if (!confirm(`Tem certeza que deseja apagar o desejo de ${name}?`)) {
+        return;
+    }
+
+    const wishes = JSON.parse(localStorage.getItem('familyWishes')) || [];
+    const wishIndex = wishes.findIndex(item => item.name === name);
+
+    if (wishIndex !== -1) {
+        wishes.splice(wishIndex, 1);
+        localStorage.setItem('familyWishes', JSON.stringify(wishes));
+        alert(`✅ Desejo de ${name} apagado com sucesso!`);
+        loadWishes(); // Recarregar a lista
+    } else {
+        alert('❌ Desejo não encontrado!');
+    }
+}
+
 // Função de navegação - CORRIGIDA
 function navigateImages(wishIndex, direction) {
     const wishCard = document.querySelector(`.wish-card[data-wish-index="${wishIndex}"]`);
     if (!wishCard) return;
-    
+
     const container = wishCard.querySelector('.wish-images-container');
     const wrappers = container.querySelectorAll('.image-wrapper');
     const totalImages = wrappers.length;
-    
+
     if (totalImages <= 1) return;
-    
+
     // Encontrar imagem atual
     let currentIndex = -1;
     wrappers.forEach((wrapper, index) => {
@@ -122,23 +148,23 @@ function navigateImages(wishIndex, direction) {
             currentIndex = index;
         }
     });
-    
+
     if (currentIndex === -1) currentIndex = 0;
-    
+
     // Calcular nova imagem
     let newIndex = currentIndex + direction;
     if (newIndex < 0) newIndex = totalImages - 1;
     if (newIndex >= totalImages) newIndex = 0;
-    
+
     // Esconder todas, mostrar apenas a atual
     wrappers.forEach(wrapper => {
         wrapper.style.display = 'none';
         wrapper.classList.remove('active');
     });
-    
+
     wrappers[newIndex].style.display = 'flex';
     wrappers[newIndex].classList.add('active');
-    
+
     // Atualizar contador
     const counter = container.querySelector('.current-image');
     if (counter) {
@@ -156,16 +182,16 @@ function compressImage(file) {
         }
 
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             const img = new Image();
-            img.onload = function() {
+            img.onload = function () {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                
+
                 const MAX_SIZE = 400;
                 let width = img.width;
                 let height = img.height;
-                
+
                 if (width > height) {
                     if (width > MAX_SIZE) {
                         height = Math.round((height * MAX_SIZE) / width);
@@ -177,11 +203,11 @@ function compressImage(file) {
                         height = MAX_SIZE;
                     }
                 }
-                
+
                 canvas.width = width;
                 canvas.height = height;
                 ctx.drawImage(img, 0, 0, width, height);
-                
+
                 try {
                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
                     resolve(compressedBase64);
@@ -189,21 +215,21 @@ function compressImage(file) {
                     resolve(e.target.result);
                 }
             };
-            
-            img.onerror = function() {
+
+            img.onerror = function () {
                 reject(new Error('Erro ao carregar imagem'));
             };
-            
+
             img.src = e.target.result;
         };
-        
+
         reader.onerror = error => reject(error);
         reader.readAsDataURL(file);
     });
 }
 
 // Processar envio do formulário - CORRIGIDO
-wishForm.addEventListener('submit', async function(e) {
+wishForm.addEventListener('submit', async function (e) {
     e.preventDefault();
 
     const name = document.getElementById('name').value.trim();
@@ -228,7 +254,7 @@ wishForm.addEventListener('submit', async function(e) {
 
     try {
         let imagesBase64 = [];
-        
+
         if (imageFiles.length > 0) {
             // Mostrar feedback
             const submitButton = wishForm.querySelector('button[type="submit"]');
@@ -241,7 +267,7 @@ wishForm.addEventListener('submit', async function(e) {
                 try {
                     const compressedImage = await compressImage(imageFiles[i]);
                     imagesBase64.push(compressedImage);
-                    
+
                     if (imagesBase64.length >= 5) {
                         alert('⚠️ Máximo de 5 imagens!');
                         break;
@@ -254,7 +280,7 @@ wishForm.addEventListener('submit', async function(e) {
                     return;
                 }
             }
-            
+
             submitButton.innerHTML = originalText;
             submitButton.disabled = false;
         }
