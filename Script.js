@@ -77,18 +77,18 @@ function compressImage(file) {
         }
 
         const reader = new FileReader();
-
-        reader.onload = function (e) {
+        
+        reader.onload = function(e) {
             const img = new Image();
-            img.onload = function () {
+            img.onload = function() {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-
+                
                 // Tamanho máximo reduzido
                 const MAX_SIZE = 400;
                 let width = img.width;
                 let height = img.height;
-
+                
                 // Redimensionar mantendo proporção
                 if (width > height) {
                     if (width > MAX_SIZE) {
@@ -101,13 +101,13 @@ function compressImage(file) {
                         height = MAX_SIZE;
                     }
                 }
-
+                
                 canvas.width = width;
                 canvas.height = height;
-
+                
                 // Comprimir imagem
                 ctx.drawImage(img, 0, 0, width, height);
-
+                
                 // Qualidade reduzida para arquivo menor
                 try {
                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
@@ -119,22 +119,22 @@ function compressImage(file) {
                     resolve(e.target.result);
                 }
             };
-
-            img.onerror = function () {
+            
+            img.onerror = function() {
                 console.error('❌ Erro ao carregar imagem');
                 alert('❌ Erro ao processar a imagem. Tente outra imagem.');
                 reject(new Error('Erro ao carregar imagem'));
             };
-
+            
             img.src = e.target.result;
         };
-
-        reader.onerror = function (error) {
+        
+        reader.onerror = function(error) {
             console.error('❌ Erro ao ler arquivo:', error);
             alert('❌ Não foi possível ler a imagem. Tente outro arquivo.');
             reject(error);
         };
-
+        
         reader.readAsDataURL(file);
     });
 }
@@ -167,17 +167,17 @@ wishForm.addEventListener('submit', async function (e) {
 
     try {
         let imageBase64 = null;
-
+        
         // Processar imagem se for fornecida
         if (imageFile) {
             console.log('🖼️ Processando imagem...');
-
+            
             // Mostrar feedback para o usuário
             const submitButton = wishForm.querySelector('button[type="submit"]');
             const originalText = submitButton.innerHTML;
             submitButton.innerHTML = '⏳ Comprimindo imagem...';
             submitButton.disabled = true;
-
+            
             try {
                 imageBase64 = await compressImage(imageFile);
                 console.log('✅ Imagem processada com sucesso');
@@ -187,7 +187,7 @@ wishForm.addEventListener('submit', async function (e) {
                 submitButton.disabled = false;
                 return; // Para aqui se deu erro na imagem
             }
-
+            
             // Restaurar botão
             submitButton.innerHTML = originalText;
             submitButton.disabled = false;
@@ -216,4 +216,4 @@ wishForm.addEventListener('submit', async function (e) {
 });
 
 // Carregar desejos ao abrir a página
-document.addEventListener('DOMContentLoaded', loadWishes);  
+document.addEventListener('DOMContentLoaded', loadWishes);
