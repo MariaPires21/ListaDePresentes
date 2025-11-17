@@ -43,15 +43,62 @@ function loadWishes() {
     }
 
     wishList.innerHTML = '';
-    wishes.forEach(wish => {
+    wishes.forEach((wish, index) => {
         const wishCard = document.createElement('div');
         wishCard.className = 'wish-card';
+        wishCard.setAttribute('data-wish-index', index);
 
         let imageHtml = '';
-        if (wish.image) {
-            imageHtml = `<img src="${wish.image}" alt="Presente desejado por ${wish.name}" class="wish-image" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999;\\'>❌ Erro na imagem</div>'">`;
+
+        // Verificar se tem múltiplas imagens
+        if (wish.images && wish.images.length > 0) {
+            // MÚLTIPLAS IMAGENS - Com setas
+            imageHtml = `
+                <div class="wish-images-container">
+                    ${wish.images.map((image, imgIndex) => `
+                        <div class="image-wrapper ${imgIndex === 0 ? 'active' : ''}" 
+                             style="display: ${imgIndex === 0 ? 'flex' : 'none'}"
+                             data-image-index="${imgIndex}">
+                            <img src="${image}" 
+                                 alt="Presente ${imgIndex + 1} desejado por ${wish.name}" 
+                                 class="wish-image"
+                                 onload="handleImageLoad(this)"
+                                 onerror="this.style.display='none'">
+                        </div>
+                    `).join('')}
+                    
+                    ${wish.images.length > 1 ? `
+                        <div class="image-counter">
+                            <span class="current-image">1</span> / <span class="total-images">${wish.images.length}</span>
+                        </div>
+                        <button class="nav-btn prev-btn" onclick="navigateImages(${index}, -1)">‹</button>
+                        <button class="nav-btn next-btn" onclick="navigateImages(${index}, 1)">›</button>
+                    ` : ''}
+                </div>
+            `;
+        } else if (wish.image) {
+            // UMA ÚNICA IMAGEM
+            imageHtml = `
+                <div class="wish-images-container">
+                    <div class="image-wrapper active" style="display: flex">
+                        <img src="${wish.image}" 
+                             alt="Presente desejado por ${wish.name}" 
+                             class="wish-image"
+                             onload="handleImageLoad(this)"
+                             onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\"height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999;\">❌ Erro na imagem</div>'">
+                    </div>
+                </div>
+            `;
         } else {
-            imageHtml = `<div style="height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999;">🎁<br><small>Sem imagem</small></div>`;
+            // SEM IMAGEM
+            imageHtml = `
+                <div class="wish-images-container">
+                    <div class="no-image-placeholder">
+                        <div class="gift-emoji">🎁</div>
+                        <div class="no-image-text">Sem imagem</div>
+                    </div>
+                </div>
+            `;
         }
 
         wishCard.innerHTML = `
@@ -59,11 +106,54 @@ function loadWishes() {
             <div class="wish-info">
                 <div class="wish-name">${wish.name}</div>
                 <div class="wish-description">${wish.wish}</div>
+                ${wish.images && wish.images.length > 1 ? `
+                    <small class="photos-hint">
+                        📸 ${wish.images.length} foto(s) - Use as setas para navegar
+                    </small>
+                ` : ''}
             </div>
         `;
 
         wishList.appendChild(wishCard);
     });
+}
+
+// Função para centralizar imagens verticais
+function handleImageLoad(imgElement) {
+    const wrapper = imgElement.parentElement;
+
+    // Verificar se a imagem é vertical
+    if (imgElement.naturalHeight > imgElement.naturalWidth) {
+        wrapper.classList.add('vertical-image');
+    } else {
+        wrapper.classList.add('horizontal-image');
+    }
+}
+
+// Navegação entre imagens
+function navigateImages(wishIndex, direction) {
+    const wishCard = document.querySelector(`[data-wish-index="${wishIndex}"]`);
+    if (!wishCard) return;
+
+    const container = wishCard.querySelector('.wish-images-container');
+    const wrappers = container.querySelectorAll('.image-wrapper');
+    const currentIndex = Array.from(wrappers).findIndex(wrapper => wrapper.style.display === 'flex');
+    const totalImages = wrappers.length;
+
+    let newIndex = currentIndex + direction;
+    if (newIndex < 0) newIndex = totalImages - 1;
+    if (newIndex >= totalImages) newIndex = 0;
+
+    // Esconder todas as imagens
+    wrappers.forEach(wrapper => wrapper.style.display = 'none');
+    // Mostrar apenas a imagem atual
+    wrappers[newIndex].style.display = 'flex';
+
+    // Atualizar contador
+    const counter = container.querySelector('.current-image');
+    if (counter) {
+        counter.textContent = newIndex + 1;
+    }
 }
 
 // FUNÇÃO MELHORADA para comprimir imagens
@@ -145,7 +235,7 @@ wishForm.addEventListener('submit', async function (e) {
 
     const name = document.getElementById('name').value.trim();
     const wish = document.getElementById('wish').value.trim();
-    const imageFile = document.getElementById('image').files[0];
+    const imageFiles = document.getElementById('image').files;
 
     // Validação básica
     if (!name || !wish) {
@@ -166,26 +256,42 @@ wishForm.addEventListener('submit', async function (e) {
     }
 
     try {
-        let imageBase64 = null;
+        let imagesBase64 = [];
 
-        // Processar imagem se for fornecida
-        if (imageFile) {
-            console.log('🖼️ Processando imagem...');
+        // Processar múltiplas imagens
+        if (imageFiles.length > 0) {
+            console.log('🖼️ Processando', imageFiles.length, 'imagem(ns)...');
 
             // Mostrar feedback para o usuário
             const submitButton = wishForm.querySelector('button[type="submit"]');
             const originalText = submitButton.innerHTML;
-            submitButton.innerHTML = '⏳ Comprimindo imagem...';
+            submitButton.innerHTML = '⏳ Comprimindo imagens...';
             submitButton.disabled = true;
 
-            try {
-                imageBase64 = await compressImage(imageFile);
-                console.log('✅ Imagem processada com sucesso');
-            } catch (error) {
-                console.error('❌ Erro no processamento da imagem:', error);
-                submitButton.innerHTML = originalText;
-                submitButton.disabled = false;
-                return; // Para aqui se deu erro na imagem
+            // Processar cada imagem
+            for (let i = 0; i < imageFiles.length; i++) {
+                try {
+                    console.log(`📸 Processando imagem ${i + 1}/${imageFiles.length}`);
+
+                    const compressedImage = await compressImage(imageFiles[i]);
+                    imagesBase64.push(compressedImage);
+                    console.log('✅ Imagem', i + 1, 'processada com sucesso');
+
+                    // Atualizar feedback
+                    submitButton.innerHTML = `⏳ Processando... (${i + 1}/${imageFiles.length})`;
+
+                    // Limitar a 5 imagens no máximo
+                    if (imagesBase64.length >= 5) {
+                        alert('⚠️ Máximo de 5 imagens atingido. As demais serão ignoradas.');
+                        break;
+                    }
+
+                } catch (imageError) {
+                    console.error(`❌ Erro na imagem ${i + 1}:`, imageError);
+                    submitButton.innerHTML = originalText;
+                    submitButton.disabled = false;
+                    return;
+                }
             }
 
             // Restaurar botão
@@ -197,13 +303,22 @@ wishForm.addEventListener('submit', async function (e) {
         const newWish = {
             name: name,
             wish: wish,
-            image: imageBase64
+            date: new Date().toISOString()
         };
+
+        // Adicionar imagens (múltiplas ou única)
+        if (imagesBase64.length > 0) {
+            newWish.images = imagesBase64;
+            // Para compatibilidade com versões antigas
+            if (imagesBase64.length === 1) {
+                newWish.image = imagesBase64[0];
+            }
+        }
 
         wishes.push(newWish);
         localStorage.setItem('familyWishes', JSON.stringify(wishes));
 
-        alert('🎄 Seu desejo foi adicionado com sucesso!' + (imageBase64 ? ' (Com imagem)' : ''));
+        alert('🎄 Seu desejo foi adicionado com sucesso!' + (imagesBase64.length > 0 ? ` (${imagesBase64.length} foto(s))` : ''));
         wishForm.reset();
 
         // Mudar para a aba de visualização
@@ -216,4 +331,4 @@ wishForm.addEventListener('submit', async function (e) {
 });
 
 // Carregar desejos ao abrir a página
-document.addEventListener('DOMContentLoaded', loadWishes);
+document.addEventListener('DOMContentLoaded', loadWishes);  
