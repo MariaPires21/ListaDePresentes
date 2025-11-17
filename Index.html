@@ -45,9 +45,13 @@
                     <textarea id="wish" required placeholder="Descreva o que você gostaria de ganhar..."></textarea>
                 </div>
 
+
                 <div class="form-group">
-                    <label for="image">Imagem do presente (opcional):</label>
-                    <input type="file" id="image" accept="image/*">
+                    <label for="image">Imagens do presente (opcional):</label>
+                    <input type="file" id="image" accept="image/*" multiple>
+                    <small style="color: #666; font-size: 0.9rem;">
+                        📸 Você pode selecionar várias fotos (Ctrl+Click ou Shift+Click) - máximo 5
+                    </small>
                 </div>
 
                 <button type="submit" class="btn">Enviar Meus Desejos</button>
@@ -73,6 +77,8 @@
         </div>
     </footer>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="Script.js"></script>
 </body>
 

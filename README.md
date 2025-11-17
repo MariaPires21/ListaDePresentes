@@ -1,1 +1,5 @@
 Olaa, nesta aplicação temos um formulário em HTML, CSS E JavaScript, para poder mandar no grupo da família e ajudar no amigo secreto desse ano. Assim, respondendo o formulário todos tem a ctz de uma ideia de presente de cada um, tendo que obrigatóriamente enviar o nome e o que quer, e como opcional uma imagem do presente.
+
+
+const JSONBIN_ID = '690fb6ccae596e708f4d14d8';
+const MASTER_KEY = '$2a$10$Tmtgh0S3ERmxdctqZ3dtxOhLISS.q6g6v6gBhisR4BFJxG0oOsuB6';
